@@ -28,6 +28,7 @@ import threading
 import cv2
 from pynput.keyboard import Key, Controller
 from time import sleep
+from bs4 import BeautifulSoup
 
 
 # Load the pre-trained Haarcascades face classifier
@@ -44,7 +45,7 @@ def speech():
             print("Listening Sir......")
             speak("Listening sir")
             recognizer.adjust_for_ambient_noise(source)
-            audio = recognizer.listen(source, timeout=10)
+            audio = recognizer.listen(source, timeout=None)
 
         try:
             # The audio has already been captured in the previous block
@@ -376,7 +377,7 @@ def search_file():
     output = "Want to enter the file manually or by speech"
     print(output)
     speak(output)
-    ms = output
+    ms = speech()
     valid_ms = ["manually", "speach", "type", "typing", "talk", "ask"]
     file_to_search = next((valid for valid in valid_ms if valid in ms.lower()), None)
 
@@ -841,7 +842,7 @@ def controler(choice):
             value = 9
         elif value == "ten":
             value = 10
-        else: 
+        else:
             return value
         from keyboard import volumeup
         speak("Turning volume up,sir")
@@ -885,6 +886,34 @@ def controler(choice):
             sleep(0.1)
 
 
+def waiting():
+    recognizer = sr.Recognizer()
+    while True:
+        print("Waiting for a command...")
+        with sr.Microphone() as source:
+            recognizer.adjust_for_ambient_noise(source)
+            audio = recognizer.listen(source, timeout=None)
+            command = recognizer.recognize_google(audio).lower()
+            if ["activate", "restart"] in command:
+                print("AI activated! Sir")
+                speak("AI activated sir")
+                break
+
+def google(find):
+    find = find
+    url = f"https://www.google.com/search?q={find}"
+
+    req = requests.get(url)
+    soup = BeautifulSoup(req.text, "html.parser")
+
+    # Using a dictionary for specifying the class attribute
+    mysearch = soup.find("div", {"class": "BNeawe"}).text
+    speak("According to google")
+    time.sleep(1)
+    print(mysearch)
+    speak(mysearch)
+
+
 def main():
     result = run_face_detection()
 
@@ -920,7 +949,7 @@ def main():
                             "flipkart",
                             "amazon", "hotstar", "app"
                             "amazonprime", "amazon prime", "netflix", "zee5", "map", "googlemap", "google map",
-                            "translate", "screenshot", "screen shot", "alarm",
+                            "translate", "screenshot", "screen shot", "alarm", "wait",
                             "stock", "joke", "news", "cmd", "command prompt", "delete", "backspace"
                             "reminder", "notification", "date", "time", "wikipedia", "wiki", "wiki pedia", "weather",
                             "copy", "paste", "select", "write", "text", "typing", "tab", "caps lock", "capslock",
@@ -929,7 +958,7 @@ def main():
                             "pause", "stop", "play", "replay", "mute", "unmute", "increase", "decrease", "up", "down"]
             choice = next((valid for valid in valid_choice if valid in choice.lower()), None)
 
-            if choice in ["exit", "bye", "goodbye", "good bye", "quit", "sleep", "rest"]:
+            if choice in ["exit", "bye", "goodbye", "good bye", "quit"]:
                 print("Exiting the Assistant Program. Goodbye! Sir")
                 speak("Exiting the Assistant program. goodbye sir")
                 break
@@ -1026,7 +1055,10 @@ def main():
                 alarm()
             elif choice in ["pause", "stop", "play", "replay", "mute", "unmute", "increase", "decrease", "up", "down"]:
                 controler(choice)
+            elif choice in ["sleep", "wait", "rest"]:
+                waiting()
             else:
+                google(choice)
                 wolframalpha_query()
     else:
         print("Authentication failed. Access denied.")
